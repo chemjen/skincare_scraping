@@ -59,6 +59,8 @@ try:
 		product_dict = {}
 		driver.get(url)
 		time.sleep(5)
+		driver.execute_script("setInterval(()=>document.querySelectorAll(\".modalDialog\").forEach(x=>x.remove()), 400)")
+		time.sleep(2)
 		product_type = driver.find_elements_by_xpath('//nav[@aria-label="Breadcrumbs"]//a')
 		product_type = [val.text for val in product_type]
 		if len(product_type) < 3:
@@ -115,33 +117,9 @@ try:
 		Details, Ingredients = '',''
 		for button in buttons[:-1]:
 			if j != 0:
-				try:
-					print('clicking tab')
-					button.click()
-					time.sleep(10)
-				except:
-					print('leaving modal dialog')
-					wait_modal = WebDriverWait(driver, 10)
-					modal = wait_modal.until(EC.presence_of_all_elements_located((By.XPATH, '//div[@id="modalDialog"]')))
-					print(len(modal))
-					time.sleep(4)
-					try:
-							modal[0].find_element_by_xpath('./button[@aria-label="Continue shopping"]').click()
-					except:
-						time.sleep(3)
-						try:
-							modal[-1].find_element_by_xpath('./button[@aria-label="Continue shopping"]').click()
-						except:
-							try:
-								time.sleep(3)
-								modal[-2].find_element_by_xpath('./button[@aria-label="Continue shopping"]').click()
-							except:
-									time.sleep(3)
-									modal[-3].find_element_by_xpath('./button[@aria-label="Continue shopping"]').click()
-					time.sleep(3)
-					print('clicking tab again')
-					button.click()
-					time.sleep(5)
+				print('clicking tab')
+				button.click()
+				time.sleep(10)
 			label = button.find_element_by_xpath('./span').text
 			if label in ["Details", "Ingredients"]:
 				text = [driver.find_element_by_xpath('//div[@id="tabpanel%d"]/div' %j).text]
