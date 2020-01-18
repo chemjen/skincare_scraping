@@ -17,99 +17,151 @@ opts.add_argument("--disable-notifications")
 
 driver = webdriver.Chrome(options=opts)
 
+product_urls = open('sephora_product_urls.txt', 'r').readlines()
+
 ########################################################################
-
-#driver.get("https://www.sephora.com/product/intensive-vitalizing-eye-essence-P394619?icid2=products%20grid:p394619")
-
-driver.get("https://www.sephora.com/product/pro-filt-r-hydrating-primer-P448703?icid2=fenty_step1_011119_productcarousel_ufe:p448703:product")
-
-cats = driver.find_elements_by_xpath('//nav[@aria-label="Breadcrumbs"]//a')
-family, genus, species = cats[0].text, cats[1].text, cats[2].text
-
-upper_right_box = driver.find_element_by_xpath('//div[@class="css-ehuxu5 "]')
-price = driver.find_element_by_xpath('//div[@data-comp="Price Box"]').text[1:]
-print('price')
-print(price)
-print('='*70)
-product = driver.find_elements_by_xpath('//h1[@data-comp="DisplayName Flex Box"]//span')
-print(len(product))
-product = [x.text for x in product]
-brand, product = product[0], product[1]
-print('brand, product')
-print(brand, product)
-item = driver.find_element_by_xpath('//div[@data-comp="SizeAndItemNumber Box"]').text.split()[1]
-print('item')
-print(item)
-
-try:
-    size = driver.find_element_by_xpath('//div[@data-comp="SizeAndItemNumber Box"]/span').text
-except:
-    size = driver.find_element_by_xpath('//span[@data-comp="ProductVariation Text Box"]').text
-print('size')
-print(size)
-
-num_love = driver.find_element_by_xpath('//div[@data-comp="ProductLovesCount Flex Box"]/span/span').text
-print('num_love')
-print(num_love)
-
-num_reviews = driver.find_element_by_xpath('//a[@data-comp="RatingsSummary Flex Box"]/span').text.split()[0]
-print('num_reviews')
-print(num_reviews)
-
-product_tabs_section = driver.find_element_by_xpath('//div[@data-at="product_tabs_section"]')
-
-buttons = driver.find_elements_by_xpath('//div[@data-at="product_tabs_section"]/div[@aria-label="Product Information"]/button')
-print(len(buttons))
-#driver.execute_script("arguments[0].scrollIntoView", product_tabs_section)
-driver.execute_script("window.scrollBy(0, 500)", product_tabs_section)
-#time.sleep(5)
-#driver.execute_script("document.getElementById('modalDialog').remove()")
-wait_modal = WebDriverWait(driver, 10)
-modal = wait_modal.until(EC.presence_of_all_elements_located((By.XPATH,
-									'//div[@id="modalDialog"]')))
-time.sleep(1)
-modal[1].find_element_by_xpath('./button[@aria-label="Continue shopping"]').click()
+if os.path.isfile(f'index.txt') and os.path.isfile(f'products.csv'):
+	index = int(open('index.txt').read())
+	if index >= len(product_urls) - 1:
+		print(index)
+		driver.close()
+		raise SystemExit
+	else: 
+		csv_file =  open(f'products.csv', 'a', encoding='utf-8', newline='')
+#		write = csv.writer(csv_file)
+		writer = csv.DictWriter(csv_file, fieldnames = ['name', 'brand', 'family', 'genus', 'species',
+			'price', 'size', 'weight', 'volume', 'num_loves', 'num_reviews', 'ave_rating', 
+			'details', 'ingredients'])
+		product_urls = product_urls[index:]
+else:
+	index = 0
+	csv_file =  open(f'products.csv', 'w', encoding='utf-8', newline='')
+#	writer = csv.writer(csv_file)
+	writer = csv.DictWriter(csv_file, fieldnames = ['name', 'brand', 'family', 'genus', 'species',
+			 'price', 'size', 'weight', 'volume', 'num_loves', 'num_reviews', 'ave_rating',
+				'details', 'ingredients'])
+	column_dict = {'name':'name', 'brand':'brand',  'family':'family', 'genus':'genus', 'species':'species',
+					'price':'price', 'size':'size', 'weight':'weight', 'volume':'volume', 'num_loves':'num_loves',
+					'num_reviews':'num_reviews', 'ave_rating':'ave_rating',
+					'details':'details', 'ingredients':'ingredients'}
+	writer.writerow(column_dict)	    
 
 i = 0
-height = [450, 550, 450]
+unwanted_products = ['Mini Size', 'Value & Gift Sets', 'Facial Rollers', 'Brushes & Applicators', 
+	'False Eyelashes', 'Rollerballs & Travel Size', 'Candles & Home Scents', 'Beauty Supplements',
+	'High Tech Tools', 'Lip Sets', 'Face Sets', 'Eye Sets', 'Makeup Bags & Travel Accessories',
+	'Tweezers & Eyebrow Tools', 'Blotting Papers', 'Hair Tools']
+continue_shopping_xpath = '//div[@id="modalDialog"]//button[@aria-label="Continue shopping"]'
 
-Details, Ingredients = [], []
-for button in buttons[:-1]:
-	if i != 0:
-		button.click()
-	label = button.find_element_by_xpath('./span').text
-	if label in ["Details", "Ingredients"]:
-#		print(label)
-		text = [driver.find_element_by_xpath('//div[@id="tabpanel%d"]/div' %i).text]
-#		print(text)
-		print(len(text))
-		exec(f'{label} = {text}')
-	if (Details and Ingredients):
-		break
-	i += 1
+try:
+	for i, url in enumerate(product_urls):
+		product_dict = {}
+		driver.get(url)
+		time.sleep(10)
+		product_type = driver.find_elements_by_xpath('//nav[@aria-label="Breadcrumbs"]//a')
+		product_type = [val.text for val in product_type]
+		if len(product_type) < 3:
+			continue
+		if (product_type[1] in unwanted_products) or (product_type[2] in unwanted_products):
+			continue
+		product = driver.find_elements_by_xpath('//h1[@data-comp="DisplayName Box "]//span')
+		if len(product) == 0:
+			product = driver.find_elements_by_xpath('//h1[@data-comp="DisplayName Flex Box"]//span')
+		if len(product) == 0:
+			print(url, 'did not work')
+			continue
 
-print('Details, Ingredients')
-print(Details, Ingredients)
+		product_dict['family'] = product_type[0]
+		product_dict['genus'] = product_type[1]
+		product_dict['species'] = product_type[2]
+		product_dict['name'] = product[1].text
+		product_dict['brand'] = product[0].text
 
+		try:
+			product_dict['price'] = driver.find_element_by_xpath('//div[@data-comp="Price Box "]').text 
+		except:
+			product_dict['price'] = driver.find_element_by_xpath('//div[@data-comp="Price Box "]/span[1]').text
 
-ave_rating = driver.find_element_by_xpath('//*[@id="ratings-reviews"]/div[2]/div[2]/div[1]/div/div[1]/div[2]').text
-print(ave_rating) 
+	
+		size = driver.find_element_by_xpath('//div[@data-comp="SizeAndItemNumber Box "]').text
+		if re.findall('^ITEM', size):
+			try:
+				size = driver.find_element_by_xpath('//span[@data-comp="ProductVariation Text Box "]').text
+				print(size)
+			except:
+				size = ''
+	
+		weight = re.findall("\d+\.?\d* ?oz", size)
+		if weight:
+			product_dict['weight'] = float(re.findall("\d+\.?\d*", weight[0])[0])
+		weight = re.findall("\d+\.?\d* ?fl oz", size)
+		if weight:
+			product_dict['weight'] = float(re.findall("\d+\.?\d*", weight[0])[0])
+		volume = re.findall("\d+ ?mL", size)
+		if volume:	
+			product_dict['volume'] = float(re.findall("\d+", volume[0])[0])
+		product_dict['num_loves'] = driver.find_element_by_xpath('//span[@data-at="product_love_count"]').text
+		product_dict['num_reviews'] = driver.find_element_by_xpath('//span[@data-at="number_of_reviews"]').text.split()[0]
+	
+		product_tabs_section = driver.find_elements_by_xpath('//div[@data-at="product_tabs_section"]')
+		buttons = driver.find_elements_by_xpath('//div[@data-at="product_tabs_section"]/div[@aria-label="Product Information"]/button')
+		driver.execute_script("window.scrollBy(0, 570)", product_tabs_section)
+		time.sleep(6)
 
-would_recommend = driver.find_element_by_xpath('//*[@id="ratings-reviews"]/div[2]/div[2]/div[1]/div/div[2]/div').text
+		print('going to product tab section')
+	
+		j = 0
+		Details, Ingredients = '',''
+		for button in buttons[:-1]:
+			if j != 0:
+				try:
+					print('clicking tab')
+					button.click()
+					time.sleep(5)
+				except:
+					print('leaving modal dialog')
+					wait_modal = WebDriverWait(driver, 10)
+					modal = wait_modal.until(EC.presence_of_all_elements_located((By.XPATH, '//div[@id="modalDialog"]')))
+					time.sleep(1)
+					try:
+						modal[0].find_element_by_xpath('./button[@aria-label="Continue shopping"]').click()
+					except:
+						time.sleep(1)
+						modal[1].find_element_by_xpath('./button[@aria-label="Continue shopping"]').click()
+					time.sleep(2)
+					print('clicking tab again')
+					button.click()
+					time.sleep(5)
+			label = button.find_element_by_xpath('./span').text
+			if label in ["Details", "Ingredients"]:
+				text = [driver.find_element_by_xpath('//div[@id="tabpanel%d"]/div' %j).text]
+				exec(f'{label} = {text}')
+			if (Details != '') and (Ingredients != ''):
+				break
+			j += 1
 
-#driver.execute_script("window.scrollTo(0, document.body.scrollHeight/2.)")
-#details 
-#ingredients
+		product_dict['details'] = Details
+		product_dict['ingredients'] = Ingredients
+		
+		if product_dict['num_reviews'] != '0':
+			review_section = driver.find_elements_by_xpath('//*[@id="ratings-reviews"]')
+			driver.execute_script("window.scrollBy(0, 500)", review_section)
+			time.sleep(5)
+			ave_rating = driver.find_element_by_xpath('//*[@id="ratings-reviews"]//div[@class="css-1r36mik "]').text
+			ave_rating = float(ave_rating.split('/')[0])
+			print(ave_rating)
+			product_dict['ave_rating'] = ave_rating
 
-#rating
+		writer.writerow(product_dict)
+except Exception as e:
+	print(url)
+	print(e)
+	open('index.txt', 'w').write('%d' %(i+index))
+	csv_file.close()
+	driver.close()
+	quit()
 
-#most_helpful_review
-
-
-#Rating 
-#most_helpful_review
-
-
-
+driver.close()
+quit()
 
 
