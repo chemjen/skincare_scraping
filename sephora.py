@@ -22,6 +22,7 @@ product_urls = open('sephora_product_urls.txt', 'r').readlines()
 ########################################################################
 if os.path.isfile(f'index.txt') and os.path.isfile(f'products.csv'):
 	index = int(open('index.txt').read())
+	index += 1
 	if index >= len(product_urls) - 1:
 		print(index)
 		driver.close()
@@ -57,7 +58,7 @@ try:
 	for i, url in enumerate(product_urls):
 		product_dict = {}
 		driver.get(url)
-		time.sleep(10)
+		time.sleep(5)
 		product_type = driver.find_elements_by_xpath('//nav[@aria-label="Breadcrumbs"]//a')
 		product_type = [val.text for val in product_type]
 		if len(product_type) < 3:
@@ -106,7 +107,7 @@ try:
 		product_tabs_section = driver.find_elements_by_xpath('//div[@data-at="product_tabs_section"]')
 		buttons = driver.find_elements_by_xpath('//div[@data-at="product_tabs_section"]/div[@aria-label="Product Information"]/button')
 		driver.execute_script("window.scrollBy(0, 570)", product_tabs_section)
-		time.sleep(6)
+		time.sleep(5)
 
 		print('going to product tab section')
 	
@@ -117,18 +118,27 @@ try:
 				try:
 					print('clicking tab')
 					button.click()
-					time.sleep(5)
+					time.sleep(10)
 				except:
 					print('leaving modal dialog')
 					wait_modal = WebDriverWait(driver, 10)
 					modal = wait_modal.until(EC.presence_of_all_elements_located((By.XPATH, '//div[@id="modalDialog"]')))
-					time.sleep(1)
+					print(len(modal))
+					time.sleep(4)
 					try:
-						modal[0].find_element_by_xpath('./button[@aria-label="Continue shopping"]').click()
+							modal[0].find_element_by_xpath('./button[@aria-label="Continue shopping"]').click()
 					except:
-						time.sleep(1)
-						modal[1].find_element_by_xpath('./button[@aria-label="Continue shopping"]').click()
-					time.sleep(2)
+						time.sleep(3)
+						try:
+							modal[-1].find_element_by_xpath('./button[@aria-label="Continue shopping"]').click()
+						except:
+							try:
+								time.sleep(3)
+								modal[-2].find_element_by_xpath('./button[@aria-label="Continue shopping"]').click()
+							except:
+									time.sleep(3)
+									modal[-3].find_element_by_xpath('./button[@aria-label="Continue shopping"]').click()
+					time.sleep(3)
 					print('clicking tab again')
 					button.click()
 					time.sleep(5)
@@ -145,8 +155,8 @@ try:
 		
 		if product_dict['num_reviews'] != '0':
 			review_section = driver.find_elements_by_xpath('//*[@id="ratings-reviews"]')
-			driver.execute_script("window.scrollBy(0, 500)", review_section)
-			time.sleep(5)
+			driver.execute_script("window.scrollBy(0, 300)", review_section)
+			time.sleep(10)
 			ave_rating = driver.find_element_by_xpath('//*[@id="ratings-reviews"]//div[@class="css-1r36mik "]').text
 			ave_rating = float(ave_rating.split('/')[0])
 			print(ave_rating)
@@ -156,9 +166,11 @@ try:
 except Exception as e:
 	print(url)
 	print(e)
+	open('tricky_pages.txt', 'a').write(url+'\n')
 	open('index.txt', 'w').write('%d' %(i+index))
 	csv_file.close()
 	driver.close()
+	time.sleep(10)
 	quit()
 
 driver.close()
