@@ -60,16 +60,18 @@ try:
 		product_dict = {}
 		driver.implicitly_wait(10)
 		driver.get(url)
-		time.sleep(10)
-			
+		time.sleep(5)
+		if i == 0:
+			open('tricky_pages.txt', 'a').write(url+'\n')
+			continue					
 		product_type = driver.find_elements_by_xpath('//nav[@aria-label="Breadcrumbs"]//a')
 		if len(product_type) < 3:
 			continue
 		product_type = [val.text for val in product_type]
 		if (product_type[1] in unwanted_products) or (product_type[2] in unwanted_products):
 			continue
-		driver.execute_script("setInterval(()=>document.querySelectorAll(\".modalDialog\").forEach(x=>x.remove()), 100)")
-		time.sleep(10)
+#		driver.execute_script("setInterval(()=>document.querySelectorAll(\".modalDialog\").forEach(x=>x.remove()), 100)")
+#		time.sleep(5)
 	
 		product = driver.find_elements_by_xpath('//h1[@data-comp="DisplayName Box "]//span')
 		if len(product) == 0:
@@ -107,7 +109,10 @@ try:
 		if volume:	
 			product_dict['volume'] = float(re.findall("\d+", volume[0])[0])
 		product_dict['num_loves'] = driver.find_element_by_xpath('//span[@data-at="product_love_count"]').text
-		product_dict['num_reviews'] = driver.find_element_by_xpath('//span[@data-at="number_of_reviews"]').text.split()[0]
+		try:
+			product_dict['num_reviews'] = driver.find_element_by_xpath('//span[@data-at="number_of_reviews"]').text.split()[0]
+		except:
+			product_dict['num_reviews'] = '0'
 		if product_dict['num_reviews'] != '0':
 			product_dict['ave_rating'] = driver.find_element_by_xpath('//div[@data-comp="StarRating "]').get_attribute('aria-label').split()[0]
 		
@@ -115,25 +120,24 @@ try:
 		product_tabs_section = driver.find_elements_by_xpath('//div[@data-at="product_tabs_section"]')
 		buttons = driver.find_elements_by_xpath('//div[@data-at="product_tabs_section"]/div[@aria-label="Product Information"]/button')
 		driver.execute_script("window.scrollBy(0, 570)", product_tabs_section)
-		time.sleep(10)
+		time.sleep(5)
 	
-#		j = 0
-#		Details, Ingredients = '',''
-#		for button in buttons[:-1]:
-#			if j != 0:
-#				button.click()
-#				time.sleep(10)
-#			label = button.find_element_by_xpath('./span').text
-#			if label in ["Details", "Ingredients"]:
-#				text = [driver.find_element_by_xpath('//div[@id="tabpanel%d"]/div' %j).text]
-#				exec(f'{label} = {text}')
-#			if (Details != '') and (Ingredients != ''):
-#				break
-#			j += 1
+		j = 0
+		Details, Ingredients = '',''
+		for button in buttons[:-1]:
+			if j != 0:
+				button.click()
+				time.sleep(2)
+			label = button.find_element_by_xpath('./span').text
+			if label in ["Details", "Ingredients"]:
+				text = [driver.find_element_by_xpath('//div[@id="tabpanel%d"]/div' %j).text]
+				exec(f'{label} = {text}')
+			if (Details != '') and (Ingredients != ''):
+				break
+			j += 1
 
-#		product_dict['details'] = Details
-#		product_dict['ingredients'] = Ingredients
-		print(product_dict['num_reviews'])
+		product_dict['details'] = Details
+		product_dict['ingredients'] = Ingredients
 		
 		if product_dict['num_reviews'] != '0':
 			try:
@@ -141,21 +145,30 @@ try:
 				ave_rating = float(ave_rating.split('/')[0])
 				product_dict['ave_rating'] = ave_rating
 			except:
-				pass
+				try:
+					review_section = driver.find_element_by_xpath('//*[@id="ratings-reviews"]')
+					driver.execute_script("window.scrollBy(0, 200)", review_section)
+					time.sleep(4)
+					ave_rating = driver.find_element_by_xpath('//*[@id="ratings-reviews"]//div[@class="css-1r36mik "]').text
+					ave_rating = float(ave_rating.split('/')[0])
+					product_dict['ave_rating'] = ave_rating					
+				except:
+					pass
 			try:
 				num_reviews = driver.find_element_by_xpath('//div[@data-comp="ReviewsStats Box "]//span').text.split()[0]
-				print(num_reviews)
+				product_dict['num_reviews'] = num_reviews
 			except:
 				pass
-		#writer.writerow(product_dict)
+#		print(product_dict)
+		writer.writerow(product_dict)
 except Exception as e:
 	print(url)
 	print(e)
-	#open('tricky_pages.txt', 'a').write(url+'\n')
-	#open('index.txt', 'w').write('%d' %(i+index))
+	open('tricky_pages.txt', 'a').write(url+'\n')
+	open('index.txt', 'w').write('%d' %(i+index))
 	csv_file.close()
 	driver.close()
-	time.sleep(10)
+	time.sleep(4)
 	quit()
 
 driver.close()
