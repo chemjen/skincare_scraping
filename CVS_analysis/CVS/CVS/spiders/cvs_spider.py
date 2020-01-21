@@ -2,6 +2,7 @@ from CVS.items import CvsItem
 from scrapy import Spider, Request
 import re
 
+## write a list of urls for the pages listing products
 num_pages = 497
 pages = ["https://www.cvs.com/shop/beauty?page="+ str(x) for x in range(2,num_pages+1)]
 
@@ -11,11 +12,14 @@ class cvs_spider(Spider):
 	start_urls = ['https://www.cvs.com/shop/beauty'] + pages
 	
 	def parse(self, response):
+		## get the urls to the product pages
 		product_urls = response.xpath('//div[@class="css-1dbjc4n"]/div[@class="css-1dbjc4n"]//a[contains(@href, "/shop/")]/@href').extract()
+		## remove urls that are actually review pages or brand pages, and not product pages
 		product_urls = [ url for url in product_urls if (url.find('reviews') == -1) and (url.find('/brand-shop/') == -1)]
-
+		## write the full url
 		product_urls = ["https://www.cvs.com" + url for url in product_urls]
 		
+		## send each url for parsing
 		for url in product_urls:
 			yield Request(url=url, callback=self.parse_product_page)
 
