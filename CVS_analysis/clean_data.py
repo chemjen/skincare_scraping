@@ -21,13 +21,13 @@ df['lbs_from_oz'] = df['lbs_from_oz'].fillna(df['ounces']/oz_to_lbs)
 df['price'] = df['price'].apply(lambda x: float(x[1:]))
 
 ## create a 'price_per_oz' column
-df['price_per_oz'] = df['price']/df['ounces']
+df['price_per_oz'] = df['price']/df['ounces_from_lbs']
 
 ## remove all gift and travel sets
 df = df.loc[df['name'].apply(lambda x: 'gift set' not in x.lower())]
 df = df.loc[df['name'].apply(lambda x: 'travel' not in x.lower())]
 
-df = df.loc[~df['family'].isin(['health-medicine', 'vitamins', 'shop', 'household-grocery', 'personal-care'])]
+df = df.loc[~df['family'].isin(['health-medicine', 'vitamins'])] #, 'shop', 'household-grocery', 'personal-care'])]
 
 #df = df.loc[(df['family'] != 'household-grocery') | (df['genus'] == 'as-seen-on-tv')]
 
