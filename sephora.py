@@ -17,12 +17,12 @@ opts.add_argument("--disable-notifications")
 
 driver = webdriver.Chrome(options=opts)
 
-product_urls = open('sephora_product_urls.txt', 'r').readlines()
+product_urls = open('urls_left.txt', 'r').readlines()
+#product_urls = open('sephora_product_urls.txt', 'r').readlines()
 
 ########################################################################
 if os.path.isfile(f'index.txt') and os.path.isfile(f'products.csv'):
 	index = int(open('index.txt').read())
-	index += 1
 	if index >= len(product_urls) - 1:
 		print(index)
 		driver.close()
@@ -62,7 +62,6 @@ try:
 		driver.get(url)
 		time.sleep(5)
 		if i == 0:
-			open('tricky_pages.txt', 'a').write(url+'\n')
 			continue					
 		product_type = driver.find_elements_by_xpath('//nav[@aria-label="Breadcrumbs"]//a')
 		if len(product_type) < 3:
@@ -159,8 +158,11 @@ try:
 				product_dict['num_reviews'] = num_reviews
 			except:
 				pass
+
+		if ave_rating*2 % 1 == 0 : continue
 #		print(product_dict)
 		writer.writerow(product_dict)
+		time.sleep(4)
 except Exception as e:
 	print(url)
 	print(e)
@@ -168,7 +170,6 @@ except Exception as e:
 	open('index.txt', 'w').write('%d' %(i+index))
 	csv_file.close()
 	driver.close()
-	time.sleep(4)
 	quit()
 
 driver.close()
