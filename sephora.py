@@ -17,8 +17,7 @@ opts.add_argument("--disable-notifications")
 
 driver = webdriver.Chrome(options=opts)
 
-product_urls = open('urls_left.txt', 'r').readlines()
-#product_urls = open('sephora_product_urls.txt', 'r').readlines()
+product_urls = open('sephora_product_urls.txt', 'r').readlines()
 
 ########################################################################
 if os.path.isfile(f'index.txt') and os.path.isfile(f'products.csv'):
@@ -36,7 +35,7 @@ if os.path.isfile(f'index.txt') and os.path.isfile(f'products.csv'):
 		product_urls = product_urls[index:]
 else:
 	index = 0
-	csv_file =  open(f'products.csv', 'w', encoding='utf-8', newline='')
+	csv_file =  open(f'products_tools.csv', 'w', encoding='utf-8', newline='')
 #	writer = csv.writer(csv_file)
 	writer = csv.DictWriter(csv_file, fieldnames = ['name', 'brand', 'family', 'genus', 'species',
 			 'price', 'size', 'weight', 'volume', 'num_loves', 'num_reviews', 'ave_rating',
@@ -159,7 +158,7 @@ try:
 			except:
 				pass
 
-		if ave_rating*2 % 1 == 0 : continue
+#		if ave_rating*2 % 1 == 0 : continue
 #		print(product_dict)
 		writer.writerow(product_dict)
 		time.sleep(4)
