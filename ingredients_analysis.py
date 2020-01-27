@@ -3,9 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 plt.rcParams["figure.figsize"] = (5,5)
 df = pd.read_csv('sephora_clean.csv')
-bad_substances1 = open('banned_substances.txt', 'r').readlines()
-bad_substances2 = open('banned_substances2.txt', 'r').readlines()
-bad_substances3 = open('banned_substances3.txt', 'r').readlines()
+bad_substances = open('banned_substances.txt', 'r').readlines()
+bad_substances = list(set(bad_substances))
 other_bad_ingredients = open('common_ingredients.txt', 'r').readlines()
 common_substances = [x.strip() for x in other_bad_ingredients]
 common_substances.append('fragrance')
@@ -23,12 +22,8 @@ ingredients_list = df_ingredients['ingredients'].values.flatten()
 ingredients_list = [x.split('clean at sephora products are formulated without:')[0] for x in ingredients_list]
 false_positives = ['2', 'ethyl', 'tar','alpha','ammonium', 'bis', 'diethyl', 'urethane']
 
-bad_ingredients_list1 = [x.strip() for x in bad_substances1 if x.strip() not in false_positives]
-bad_ingredients_list1.extend(['polyurethane-18', 'polyurethane-19'])#
-bad_ingredients_list2 = [x.strip() for x in bad_substances2 if x.strip() not in false_positives]
-bad_ingredients_list2.extend(['polyurethane-18', 'polyurethane-19'])
-bad_ingredients_list3 = [x.strip() for x in bad_substances3 if x.strip() not in false_positives]
-bad_ingredients_list3.extend(['polyurethane-18', 'polyurethane-19'])
+bad_ingredients_list = [x.strip() for x in bad_substances if x.strip() not in false_positives]
+bad_ingredients_list.extend(['polyurethane-18', 'polyurethane-19'])#
 
 safe_ingredients = ['chromium oxide greens', 'phenoxyethanol', 'cocam', 'hydroxyethyl acetate',
                    'polyvinyl acetate', 'starch', 'chromium hydroxide green', '1,2-hexanediol,', 'hydroxyethyl acrylate']
@@ -51,14 +46,13 @@ for list_ in ingredients_list:
     bad_ingredients = []
     lines = [x for x in list_.split('\\n') if len(x) > 1]
     for line in lines:
-        ingdts = line.split(',')
+        ingdts = line.split(', ')
         words = []
         for ingdt in ingdts:
             words.extend(ingdt.split('/'))
         words = [word.strip() for word in words]
         for word in words:
-            if (word in bad_ingredients_list1) or (word in bad_ingredients_list2) \
-               or (word in bad_ingredients_list3):
+            if (word in bad_ingredients_list):
                 bad_ingredients.append(word)
 #    bad_ingredients_words1.append(bad_ingredients1)
 #    bad_ingredients_words2.append(bad_ingredients2)
