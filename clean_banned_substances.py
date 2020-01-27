@@ -80,11 +80,18 @@ subs = subs.loc[~subs['chem_name'].str.contains('fragrance')]
 
 subs = subs.loc[~subs['chem_name'].str.contains('hair dye')]
 
+
 ## other dyes
 banned_subs.extend(subs.loc[subs['chem_name'].str.contains('hc ')]['chem_name'].values.flatten())
 subs = subs.loc[~subs['chem_name'].str.contains('hc ')]
 
 chem_name = subs['chem_name'].values
+
+CIs = []
+for name in chem_name:
+	if re.findall('\d\d\d\d\d', name):
+		CIs.extend(re.findall('\d\d\d\d\d', name))
+
 ## these are more descriptive names than actual chemical names
 chem_name = [x for x in chem_name if ('vaccines' not in x) and \
 	('category' not in x) and ('narcotics' not in x) and \
@@ -136,6 +143,11 @@ for name in longnames:
 		banned_subs.extend([name])
 
 ingredient = subs['idins'].dropna().values
+
+for item in ingredient:
+	if re.findall('\d\d\d\d\d', item):
+		CIs.extend(re.findall('\d\d\d\d\d', item))
+
 ingredients = []
 for item in ingredient:
 	ingredients.extend(item.split(';'))
@@ -241,6 +253,12 @@ banned_subs_cleaned = list(set(banned_subs_cleaned))
 with open('banned_substances3.txt', 'w') as f:
 	for substance in banned_subs_cleaned:
 		f.write(substance+'\n')
+
+
+with open('CIs.txt', 'w') as f:
+	for ci in CIs:
+		f.write(ci+'\n')
+
 
 
 #    substance = substance.replace('c.i. ','').strip()
