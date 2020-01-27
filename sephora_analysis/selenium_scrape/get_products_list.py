@@ -11,24 +11,22 @@ import os
 import csv
 import math
 
-## getting set up with driver options
 opts = Options()
 opts.add_argument("user-agent=['Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36']")
 opts.add_argument("--disable-notifications")
 
 driver = webdriver.Chrome(options=opts)
 
-## list of brand pages
 brands = open('sephora_brand_pages.txt', 'r').readlines()
+	
+print(len(brands))
+#		waited = WebDriverWait(driver, 10)
+#		reviews = waiter.until(EC.presence_of_all_elements_located((By.XPATH,
+#									'//div[@class="row border_grayThree onlyTopBorder noSideMargin"]')))
 
-## xpath to product urls
 product_xpath = '//div[@class="css-12egk0t"]/a[@class="css-ix8km1"]'
-## xpath to the "continue shopping" button on modal dialogs (pop-ups)
 continue_shopping_xpath = '//div[@id="modalDialog"]//button[@aria-label="Continue shopping"]'
 
-## scraping just means a lot of scrolling and waiting, because the "lazy 
-## loading" elements must be scrolled over to load, which tends to take a while
-## hence the long pauses
 ########################################################################
 def scrape_brandpage(url, num_products):
 	if url:
@@ -45,11 +43,6 @@ def scrape_brandpage(url, num_products):
 		driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.8)")
 		time.sleep(10)
 	if (num_products > 36):
-	## when there are more products, the window tends to get stuck, and pop-ups tend to appear
-	## therefor I have to try clicking on elements to wake up the screen, and also removing 
-	## the modal dialogs
-		driver.execute_script("setInterval(()=>document.querySelectorAll(\".modalDialog\").forEach(x=>x.remove()), 100)")
-		time.sleep(5)
 		nproducts_initial = len(driver.find_elements_by_xpath(product_xpath))
 		if nproducts_initial <= 36:
 			driver.execute_script("arguments[0].scrollIntoView()", driver.find_elements_by_xpath(product_xpath)[-1])
@@ -57,17 +50,24 @@ def scrape_brandpage(url, num_products):
 			nproducts_final = len(driver.find_elements_by_xpath(product_xpath))
 			if nproducts_initial == nproducts_final:
 				try:
+					print('clicking')
 					driver.find_elements_by_xpath(product_xpath)[-1].click()
+					print('clicked')
 					time.sleep(5)
+					print('page down')
 					driver.find_elements_by_xpath(product_xpath)[-1].send_keys(Keys.PAGE_DOWN)
+					print('paging down')
 				except:
 					time.sleep(10)
 					ex_out = driver.find_element_by_xpath(continue_shopping_xpath)
 					time.sleep(5)
+					print('exing out')
 					ex_out.click()
 					time.sleep(5)
+					print('clicking')
 					driver.find_elements_by_xpath(product_xpath)[-1].click()
 					time.sleep(5)
+					print('paging down')
 					driver.find_elements_by_xpath(product_xpath)[-1].send_keys(Keys.PAGE_DOWN)
 		time.sleep(5)						
 		driver.execute_script("arguments[0].scrollIntoView()", driver.find_elements_by_xpath(product_xpath)[-1])
@@ -85,32 +85,36 @@ def scrape_brandpage(url, num_products):
 	print('no. product urls on this page =', len(product_urls))
 	return product_urls
 	
-## In this version, the driver actually switches the order of events and does the Keys.PAGE_DOWN BEFORE
-## clicking. this is because if it clicks first, then after it removes the pop-up it will get sent
-## to the product page
 def scrape_multibrandpage():
+	print('scraping')
 	nproducts_initial = len(driver.find_elements_by_xpath(product_xpath))
 	driver.execute_script("arguments[0].scrollIntoView()", driver.find_elements_by_xpath(product_xpath)[-1])
 	time.sleep(10)
 	nproducts_final = len(driver.find_elements_by_xpath(product_xpath))
 	if nproducts_initial == nproducts_final:
+		print('trying to unfreeze page 1')
 		driver.find_elements_by_xpath(product_xpath)[11].click()
 		time.sleep(5)
+		print('clicking out of dialog')
 		ex_out = driver.find_element_by_xpath(continue_shopping_xpath)	
 		ex_out.click()
 		time.sleep(3)
 		driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.8)")
 		time.sleep(15)
 		nproducts  = len(driver.find_elements_by_xpath(product_xpath))
+		print(nproducts)
 		if nproducts == nproducts_final:
+			print('here we go again')
 			driver.find_elements_by_xpath(product_xpath)[5].send_keys(Keys.PAGE_DOWN)
 			time.sleep(15)
 			nproducts  = len(driver.find_elements_by_xpath(product_xpath))
+			print(nproducts)
 			driver.find_elements_by_xpath(product_xpath)[-1].click()
 			time.sleep(5)
 			ex_out = driver.find_element_by_xpath(continue_shopping_xpath)
 			ex_out.click()
 			time.sleep(0.5)
+			print('clicked again')
 	driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.2)")
 	time.sleep(2)
 	driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.5)")
@@ -121,11 +125,52 @@ def scrape_multibrandpage():
 	time.sleep(15)
 	products = driver.find_elements_by_xpath(product_xpath)
 	product_urls = [product.get_attribute('href') for product in products]
+	print('no. product urls on this page =', len(product_urls))
 	return product_urls
 
-## when changing pages, a "stale element" error occurred, this was resolved
-## by scrolling and returning the document outer HTML
+def scrape_multibrandpage2():
+	print('scraping')
+	nproducts_initial = len(driver.find_elements_by_xpath(product_xpath))
+	driver.execute_script("arguments[0].scrollIntoView()", driver.find_elements_by_xpath(product_xpath)[-1])
+	time.sleep(10)
+	nproducts_final = len(driver.find_elements_by_xpath(product_xpath))
+	if nproducts_initial == nproducts_final:
+		print('trying to unfreeze page 1')
+		driver.find_elements_by_xpath(product_xpath)[11].click()
+		time.sleep(5)
+		print('clicking out of dialog')
+		ex_out = driver.find_element_by_xpath(continue_shopping_xpath)	
+		ex_out.click()
+		time.sleep(3)
+		driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.8)")
+		time.sleep(15)
+		nproducts  = len(driver.find_elements_by_xpath(product_xpath))
+		print(nproducts)
+	time.sleep(10)
+	driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.2)")
+	time.sleep(2)
+	driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.5)")
+	time.sleep(15)
+	driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.8)")
+	time.sleep(5)
+	driver.execute_script("window.scrollTo(0, document.body.scrollHeight*0.615)")
+	time.sleep(15)
+	products = driver.find_elements_by_xpath(product_xpath)
+	product_urls = [product.get_attribute('href') for product in products]
+	print('no. product urls on this page =', len(product_urls))
+	return product_urls
+
+
+
+
+
+
+
+
+
+
 def change_page():
+	print('changing page')
 	try:
 		next_page_button = driver.find_element_by_xpath('//nav[@aria-label="Pagination"]//button[@aria-label="Next"]')
 		next_page_button.click()
@@ -141,7 +186,7 @@ def change_page():
 	driver.execute_script("return document.documentElement.outerHTML")
 	time.sleep(15)
 	
-## function for when a brand has two pages of products
+
 def num_pages_2(brand, num_tot_products, method):
 	brand_urls = scrape_brandpage(brand, 60)
 	change_page()	
@@ -153,14 +198,16 @@ def num_pages_2(brand, num_tot_products, method):
 
 if os.path.isfile('sephora_product_urls.txt'):
 	f = open('sephora_product_urls.txt', 'a')
-	index = 0
 else:
 	f = open('sephora_product_urls.txt', 'w')
-	index = int(open('index.txt').read())
+
+largest_brands = open('largest_brands.txt', 'r').readlines()
+largest_brands = [x for x in largest_brands if x != '']
+index = 1
 
 try:
-	for i, brand in enumerate(brands[index:]):
-		print(i + index, brand)
+	for i, brand in enumerate(largest_brands[index:]):
+		print(i+ index, brand)
 		driver.implicitly_wait(10)
 		driver.get(brand)
 		try:
@@ -193,13 +240,14 @@ try:
 				brand_urls = num_pages_2(brand, 120, 2)
 				for _ in range(num_pages):
 					change_page()
-				#	brand_urls.extend(scrape_multibrandpage2())
-					brand_urls.extend(scrape_brandpage([],60))
+					brand_urls.extend(scrape_multibrandpage2())
+				#	brand_urls.extend(scrape_brandpage([],60))
 				change_page()
-				#brand_urls.extend(scrape_multibrandpage())
-				brand_urls.extend(scrape_brandpage([],num_last_page))
+				brand_urls.extend(scrape_multibrandpage())
+
 		num_brand_urls = len(brand_urls)
 #		assert num_tot_products == len(brand_urls), f"num_tot_products = {num_tot_products} and num_brand_urls = {num_brand_urls} ahhhh!"
+#		total_product_urls.extend(brand_urls)
 		for url in brand_urls:
 			f.write(url+'\n')
 except Exception as e:

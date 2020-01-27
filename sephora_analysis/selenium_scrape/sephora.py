@@ -17,7 +17,7 @@ opts.add_argument("--disable-notifications")
 
 driver = webdriver.Chrome(options=opts)
 
-product_urls = open('sephora_product_urls.txt', 'r').readlines()
+product_urls = open('../sephora_chemical_urls.txt', 'r').readlines()
 
 ########################################################################
 if os.path.isfile(f'index.txt') and os.path.isfile(f'products.csv'):

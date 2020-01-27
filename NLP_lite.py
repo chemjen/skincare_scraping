@@ -92,6 +92,10 @@ plt.tight_layout()
 plt.show()
 
 
+from scipy import stats
+print(stats.binom_test(x=1200, n=1956, p=800/1956)/2)
+print(stats.binom_test(x=1000, n=1956, p=800/1956)/2)
+print(stats.binom_test(x=31, n=68, p=22/68)/2)
 
 
 

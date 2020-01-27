@@ -218,7 +218,9 @@ for df in [makeup, bath_body, skincare, hair, men]:
 
 
 
-
+from scipy import stats
+print(stats.binom_test(x=2403, n=5247, p=0.400)/2)
+print(stats.binom_test(x=110, n=5247, p=0.017)/2)
 
 
 
