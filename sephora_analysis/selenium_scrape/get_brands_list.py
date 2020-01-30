@@ -25,3 +25,4 @@ with open('sephora_brand_pages.txt', 'w') as f:
 	for url in brands:
 		f.write(url+'\n')
 
+driver.close()
