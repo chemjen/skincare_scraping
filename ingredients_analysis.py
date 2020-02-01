@@ -8,6 +8,8 @@ bad_substances = list(set(bad_substances))
 other_bad_ingredients = open('common_ingredients.txt', 'r').readlines()
 common_substances = [x.strip() for x in other_bad_ingredients]
 common_substances.append('fragrance')
+ethylated_compounds = ['peg', 'yeth', ' eth', '-eth', '(eth', ')eth']
+
 cis = open('CIs.txt', 'r').readlines()
 CIs = [x.strip() for x in cis]
 
@@ -30,6 +32,7 @@ safe_ingredients = ['chromium oxide greens', 'phenoxyethanol', 'cocam', 'hydroxy
 safe_ingredients = []
 present_CIs = []
 bad_ingredients_fullstring = []
+num_eth = 0
 for list_ in ingredients_list:
     lines = list_.split('\\n')
     lines = [line for line in lines if (len(line)>1) and line[0] != '-']
@@ -38,11 +41,14 @@ for list_ in ingredients_list:
         list_ = list_.replace(word,'')
     bad_ingredients_fullstring.append([x for x in common_substances if x in list_])
     present_CIs.append([x for x in CIs if x in list_])
+    list_ = list_.replace('meth', '')
+    if ('peg' in list_) or ('eth' in list_):		
+        num_eth +=1
+
+print('number ethylated ingredients:', num_eth, num_eth/df_ingredients.shape[0])
 
 bad_ingredients_words = []
 for list_ in ingredients_list:
-#    bad_ingredients1 = []
-#    bad_ingredients2 = []
     bad_ingredients = []
     lines = [x for x in list_.split('\\n') if len(x) > 1]
     for line in lines:
@@ -54,9 +60,18 @@ for list_ in ingredients_list:
         for word in words:
             if (word in bad_ingredients_list):
                 bad_ingredients.append(word)
-#    bad_ingredients_words1.append(bad_ingredients1)
-#    bad_ingredients_words2.append(bad_ingredients2)
     bad_ingredients_words.append(bad_ingredients)
+
+num_bad_products = 0
+
+for i in range(len(bad_ingredients_words)):
+	try: 
+		if (len(bad_ingredients_fullstring[i]) > 0) or (len(bad_ingredients_words[i]) > 0):
+			num_bad_products += 1
+	except:
+		print(bad_ingredients_words[i])
+print(num_bad_products, num_bad_products/len(bad_ingredients_words))
+quit()
 
 special_ingredients = []
 for list_ in ingredients_list:
@@ -90,7 +105,6 @@ def full_count_df(df):
     return pd.merge(new_df, EU_df, how='outer', on='ingredient')
 
 total_count_df = full_count_df(df_ingredients)
-
 df_ingredients = pd.merge(df, df_ingredients, on=['name','brand','ingredients'])
 
 bath_body = df_ingredients.loc[df_ingredients['family']=='Bath & Body']
@@ -108,61 +122,80 @@ makeup_count_df = full_count_df(makeup)
 men_count_df = full_count_df(men)
 skincare_count_df = full_count_df(skincare)
 notfrag_count_df = full_count_df(not_fragrance)
-#total_count_df['family'] = 'all'
-#bb_count_df['family'] = 'bath_body'
-#frag_count_df['family'] = 'fragrance'
-#hair_count_df['family'] = 'hair'
-#makeup_count_df['family'] = 'makeup'
-#men_count_df['family'] = 'men'
-#skincare_count_df['family'] = 'skincare'
+df_ingredients['special ingredients'] = df_ingredients['special ingredients'].apply(lambda x: x  if (len(x)>0) else np.nan)
+df_ingredients['common bad ingredients'] = df_ingredients['common bad ingredients'].apply(lambda x: x  if (len(x)>0) else np.nan)
+df_ingredients['EU banned ingredients'] = df_ingredients['EU banned ingredients'].apply(lambda x: x  if (len(x)>0) else np.nan)
 
+num_special_all = df_ingredients['special ingredients'].count()
+num_common_all = df_ingredients['common bad ingredients'].count()
+num_EU_all = df_ingredients['EU banned ingredients'].count()
+
+not_fragrance['special ingredients'] = not_fragrance['special ingredients'].apply(lambda x: x  if (len(x)>0) else np.nan)
+not_fragrance['common bad ingredients'] = not_fragrance['common bad ingredients'].apply(lambda x: x  if (len(x)>0) else np.nan)
+not_fragrance['EU banned ingredients'] = not_fragrance['EU banned ingredients'].apply(lambda x: x  if (len(x)>0) else np.nan)
+
+num_special_notfrag = not_fragrance['special ingredients'].count()
+num_common_notfrag = not_fragrance['common bad ingredients'].count()
+num_EU_notfrag = not_fragrance['EU banned ingredients'].count()
+
+#print(num_special, num_common, num_EU)
+#print(df_ingredients['common bad ingredients'].count())
 
 dfs = [total_count_df, notfrag_count_df, bb_count_df, frag_count_df, makeup_count_df, men_count_df, skincare_count_df]
 title = ['all products', 'everything but fragrance', 'bath & beauty', 'fragrance', 'makeup', 'men', 'skincare']
 total_num = [df_ingredients.shape[0], not_fragrance.shape[0], bath_body.shape[0], fragrance.shape[0], makeup.shape[0], men.shape[0], skincare.shape[0]]
-print(total_num)
+num_special = [num_special_all, num_special_notfrag]
+num_common = [num_common_all, num_common_notfrag]
+num_EU = [num_EU_all, num_EU_notfrag]
+
 for i, df in enumerate(dfs):
 	df['ingredient'] = df['ingredient'].apply(lambda x: x.replace('hydroxyisohexyl 3-cyclohexene carboxaldehyde', 'h3cc'))
+	print(title[i])
 
-	dfnew = df[['ingredient', 'special counts']].dropna().sort_values(by='special counts', ascending=False)[:10]
+	dfnew = df[['ingredient', 'special counts']].dropna()
+#	for k in dfnew.ingredient.values.flatten():
+#		print(k)
+	dfnew = dfnew.sort_values(by='special counts', ascending=False)[:10]
 	dfnew.plot.bar(x='ingredient', y='special counts')
-	for j, val in enumerate(dfnew['special counts'][:10]):
+	for j, val in enumerate(dfnew['special counts'][:20]):
+		if j == 0: val0 = np.copy(val)
 		plt.text(j-0.25, val*1.01, '%1.1f%%' %(val*100/total_num[i]))
+	plt.text(j-1.8, val0*0.8, '%d (%1.1f%%)\nproducts' %(num_special[i], num_special[i]*100/total_num[i]))
 	plt.title(title[i])
 	plt.tight_layout()
 	plt.show()
-	
+	print(df['special counts'].count())	
+
+
 	dfnew = df.loc[~df['ingredient'].str.contains('ci ')]	
-	dfnew = dfnew[['ingredient', 'EU counts']].dropna().sort_values(by='EU counts', ascending=False)[:10]
+	dfnew = dfnew[['ingredient', 'EU counts']].dropna()
+	dfnew = dfnew.loc[~(dfnew['ingredient'] == 'peg')]
+	for k in dfnew.ingredient.values.flatten():
+		print(k)
+	dfnew = dfnew.sort_values(by='EU counts', ascending=False)[:10]
 	dfnew.plot.bar(x='ingredient', y='EU counts')
 	for j, val in enumerate(dfnew['EU counts'][:10]):
+		if j == 0: val0 = np.copy(val)
 		plt.text(j-0.25, val*1.01, '%1.1f%%' %(val*100/total_num[i]))
+	plt.text(j-1.8, val0*0.8, '%d (%1.1f %%)\nproducts' %(num_EU[i], num_EU[i]*100/total_num[i]))
 	plt.title(title[i])
 	plt.tight_layout()
 	plt.show()
+	print(df['EU counts'].count())	
 
-	dfnew = df.loc[~df['ingredient'].str.contains('ci ')]	
-	dfnew = dfnew[['ingredient', 'common counts']].dropna().sort_values(by='common counts', ascending=False)[:10]
+	dfnew = df[['ingredient', 'common counts']].dropna()
+	for k in dfnew['ingredient'].values.flatten():
+		print(k)
+	dfnew = dfnew.sort_values(by='common counts', ascending=False)[:10]
 	dfnew.plot.bar(x='ingredient', y='common counts')
 	for j, val in enumerate(dfnew['common counts'][:10]):
+		if j == 0: val0 = np.copy(val)
 		plt.text(j-0.25, val*1.01, '%1.1f%%' %(val*100/total_num[i]))
+	plt.text(j-1.8, val0*0.8, '%d (%1.1f %%)\nproducts' %(num_common[i], num_common[i]*100/total_num[i]))
 	plt.title(title[i])
 	plt.tight_layout()
 	plt.show()
-#	dfnew = df['ingredients','common bad ingredients'].count().sort_values(ascending=False)[:20]
-#	dfnew.plot.bar(x='ingredients', y='common bad ingredients')
-#	for j, val in dfnew['ingredients'][:20]:
-#		plt.text(j-0.1, val*1.05, '1.2%f %%' %(val*100/df.shape[0]))
-#	plt.tight_plot()
-#	plt.show()
-
-#	dfnew = df['ingredients','EU banned ingredients'].count().sort_values(ascending=False)[:20]
-#	dfnew.plot.bar(x='ingredients', y='EU banned ingredients')
-#	for j, val in dfnew['ingredients'][:20]:
-#		plt.text(j-0.1, val*1.05, '1.2%f %%' %(val*100/df.shape[0]))
-#	plt.tight_plot()
-#	plt.show()
-quit()
+	print(df['common counts'].count())	
 def percent(x):
     num_x = x.sum()
     num_group = x.size
